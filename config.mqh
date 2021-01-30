@@ -9,3 +9,6 @@ string EA_NAME = "martin_tpsl_om";
 
 extern string curlist = "EURUSD,XAUUSD"; // it can be :  XAUUSD,EURUSD,USDJPY
 extern string magicnumberlist = "18291,0";
+
+double lastbuystoploss = 0;
+double lastsellstoploss = 0;

@@ -129,33 +129,49 @@ void martingale_order_modify_calTrailingProfitOnAllOrders(string _symbol, int _m
         Print("Invalid average open price");
         return;
     }
+    
+    if (!of_selectlastorder(_symbol, _magicnumber, _ordertype))
+        return;
+        
+        
     double closeprice = 0;
     double newprice = 0;
     double trailingstoploss = 0;
+    
+    double diff = 0;
+     if (OrderType() == OP_BUY)
+     {
+        closeprice = MarketInfo(_symbol, MODE_BID);
+        diff = closeprice - averageopenprice;
+     }
+     else if (OrderType() == OP_SELL)
+     {
+         closeprice = MarketInfo(_symbol, MODE_ASK);
+         diff = averageopenprice - closeprice;
+     }
+     
+     if (diff * tf_getCurrencryMultipier(_symbol) < martingale_startTrailingAveragePips * 10)
+      return;
+    
     if (OrderType() == OP_BUY)
     {
-        closeprice = MarketInfo(_symbol, MODE_BID);
-        newprice = averageopenprice + martingale_startTrailingAveragePips * 10 / (double)tf_getCurrencryMultipier(_symbol);
-
-        if (closeprice > newprice)
+        newprice = closeprice - martingale_stoplossTrailingPips * 10 / (double)tf_getCurrencryMultipier(_symbol);
+        if (newprice <= OrderStopLoss() && OrderStopLoss() > 0)
         {
-          trailingstoploss = closeprice - martingale_stoplossTrailingPips * 10 / (double)tf_getCurrencryMultipier(_symbol);
+          return;
         }
     }
     else if (OrderType() == OP_SELL)
     {
-        closeprice = MarketInfo(_symbol, MODE_ASK);
-        newprice = averageopenprice - martingale_startTrailingAveragePips * 10 / (double)tf_getCurrencryMultipier(_symbol);
+        newprice = closeprice + martingale_stoplossTrailingPips * 10 / (double)tf_getCurrencryMultipier(_symbol);
 
-        if (closeprice < newprice)
+        if (newprice >= OrderStopLoss() && OrderStopLoss() > 0)
         {
-          trailingstoploss = closeprice + martingale_stoplossTrailingPips * 10 / (double)tf_getCurrencryMultipier(_symbol);
+          return;
         }
     }
 
-    if (trailingstoploss > 0)
-      tf_setTakeProfitStopLoss(_symbol, _ordertype, _magicnumber, trailingstoploss, 0);
-    else
-      martingale_order_modify_checkCacheandCalTakeProfitonallOrders(_symbol, _magicnumber, _ordertype);
+    tf_setTakeProfitStopLoss(_symbol, _ordertype, _magicnumber, newprice, 0);
+    
 
 }
